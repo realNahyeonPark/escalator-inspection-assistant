@@ -127,7 +127,7 @@ class _VoiceInspectionScreenState extends State<VoiceInspectionScreen>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xff4c6ef5).withOpacity(0.3),
+                        color: const Color(0xff4c6ef5).withValues(alpha: 0.3),
                         blurRadius: 15,
                         offset: const Offset(0, 5),
                       ),
@@ -184,7 +184,7 @@ class _VoiceInspectionScreenState extends State<VoiceInspectionScreen>
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: (isListening ? const Color(0xffe74c3c) : const Color(0xff6ab04c)).withOpacity(0.4),
+                    color: (isListening ? const Color(0xffe74c3c) : const Color(0xff6ab04c)).withValues(alpha: 0.4),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -243,7 +243,7 @@ class _VoiceInspectionScreenState extends State<VoiceInspectionScreen>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xff4c6ef5).withOpacity(0.6),
+                  color: const Color(0xff4c6ef5).withValues(alpha: 0.6),
                   width: 2.5,
                 ),
               ),
