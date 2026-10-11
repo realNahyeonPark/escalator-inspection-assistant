@@ -103,5 +103,3 @@ env.json
 # Android Release Signing Keys
 *.jks
 *.keystore
-
-lib/main.dart
