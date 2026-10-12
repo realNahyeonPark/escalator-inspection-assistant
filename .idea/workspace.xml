@@ -69,11 +69,11 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Users\harry\GitHub\escalator-inspection-assistant\lib\models" />
-      <recent name="C:\Users\harry\GitHub\escalator-inspection-assistant\lib\controllers" />
-      <recent name="C:\Users\harry\GitHub\escalator-inspection-assistant\lib\constants" />
-      <recent name="C:\Users\harry\GitHub\escalator-inspection-assistant\lib\screens" />
       <recent name="C:\Users\harry\GitHub\escalator-inspection-assistant\lib\widgets" />
+      <recent name="C:\Users\harry\GitHub\escalator-inspection-assistant\lib\constants" />
+      <recent name="C:\Users\harry\GitHub\escalator-inspection-assistant\lib\controllers" />
+      <recent name="C:\Users\harry\GitHub\escalator-inspection-assistant\lib\models" />
+      <recent name="C:\Users\harry\GitHub\escalator-inspection-assistant\lib\screens" />
     </key>
   </component>
   <component name="RunManager" selected="Flutter.main.dart">
