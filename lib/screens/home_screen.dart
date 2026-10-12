@@ -99,6 +99,7 @@ class HistoryDetailScreen extends StatefulWidget {
 class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
   final _repo = EquipmentRepository.instance;
   String _query = '';
+  bool _cautionOnly = false; // '주의만' 필터 칩
 
   @override
   void initState() {
@@ -110,6 +111,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
   /// "지난 스텝체인 결과" → 스텝체인을 점검한 기록만
   /// "주의" → 주의 판정 기록만
   bool _matches(InspectionRecord r) {
+    if (_cautionOnly && r.status != InspectionStatus.caution) return false;
     final q = _query;
     if (q.isEmpty) return true;
     if (q.contains('주의') && r.status == InspectionStatus.caution) return true;
@@ -130,6 +132,8 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     final all = _repo.historyOf(e.id);
     final records = all.where(_matches).toList();
     final due = _repo.dueItems(e.id);
+    final cautionCount =
+        all.where((r) => r.status == InspectionStatus.caution).length;
 
     return Scaffold(
       body: SafeArea(
@@ -137,7 +141,9 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
           children: [
             PageHeader(
               title: '${e.shortName} 이력',
-              subtitle: '최근 점검 기록을 확인합니다',
+              subtitle: e.spec == null
+                  ? '최근 점검 기록을 확인합니다'
+                  : '승강기번호 ${e.spec!.elevatorNo} · ${e.location}',
               onBack: () => Navigator.of(context).pop(),
             ),
             Expanded(
@@ -148,6 +154,8 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                 children: [
+                  EquipmentSpecCard(spec: e.spec),
+                  const SizedBox(height: 12),
                   // 누락 방지: 이번 달 필수 항목
                   AppCard(
                     child: Column(
@@ -182,7 +190,24 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                     hint: "음성 검색: '지난 스텝체인 결과'",
                     onChanged: (v) => setState(() => _query = v.trim()),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _FilterChip(
+                        label: '전체 ${all.length}',
+                        selected: !_cautionOnly,
+                        onTap: () => setState(() => _cautionOnly = false),
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: '주의만 $cautionCount',
+                        selected: _cautionOnly,
+                        danger: true,
+                        onTap: () => setState(() => _cautionOnly = true),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   if (records.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 40),
@@ -304,6 +329,43 @@ class _TimelineItem extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 전체 / 주의만 필터 칩
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final bool danger;
+  final VoidCallback onTap;
+
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = danger ? AppColors.danger : AppColors.primary;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? accent : AppColors.surface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: selected ? accent : AppColors.border),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : AppColors.textSecondary)),
       ),
     );
   }

@@ -36,6 +36,7 @@ class _EquipmentSheetState extends State<EquipmentSheet> {
   final _repo = EquipmentRepository.instance;
   final _nameCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
+  final _elevatorNoCtrl = TextEditingController();
 
   Equipment? _equipment;
   bool _justImported = false; // 방금 이력을 가져왔는지 (안내 문구용)
@@ -50,6 +51,7 @@ class _EquipmentSheetState extends State<EquipmentSheet> {
   void dispose() {
     _nameCtrl.dispose();
     _locationCtrl.dispose();
+    _elevatorNoCtrl.dispose();
     super.dispose();
   }
 
@@ -61,10 +63,12 @@ class _EquipmentSheetState extends State<EquipmentSheet> {
   Future<void> _registerNew() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
+    final elevatorNo = _elevatorNoCtrl.text.trim();
     final e = Equipment(
       id: widget.lookup.id,
       name: name,
       location: _locationCtrl.text.trim(),
+      spec: elevatorNo.isEmpty ? null : EquipmentSpec(elevatorNo: elevatorNo),
     );
     await _repo.register(e);
     setState(() => _equipment = e);
@@ -93,7 +97,8 @@ class _EquipmentSheetState extends State<EquipmentSheet> {
       padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottomInset),
       child: SafeArea(
         top: false,
-        child: Column(
+        child: SingleChildScrollView(
+         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -123,10 +128,13 @@ class _EquipmentSheetState extends State<EquipmentSheet> {
                   '${_equipment!.location.isEmpty ? '위치 미입력' : _equipment!.location} · QR ${widget.lookup.id}',
                   style: const TextStyle(
                       fontSize: 12, color: AppColors.textSecondary)),
+              const SizedBox(height: 12),
+              EquipmentSpecCard(spec: _equipment!.spec),
               const SizedBox(height: 16),
               if (registered) ..._registeredBody() else ..._inDbBody(),
             ],
           ],
+        ),
         ),
       ),
     );
@@ -261,6 +269,8 @@ class _EquipmentSheetState extends State<EquipmentSheet> {
       _input(_nameCtrl, '설비 이름 (예: 9호기 에스컬레이터)'),
       const SizedBox(height: 8),
       _input(_locationCtrl, '위치 (예: D동 2층)'),
+      const SizedBox(height: 8),
+      _input(_elevatorNoCtrl, '승강기번호 (예: 2104-390, 승강기 표지에 적힌 번호)'),
       const SizedBox(height: 16),
       _PrimaryButton(label: '새 설비로 등록', onPressed: _registerNew),
     ];

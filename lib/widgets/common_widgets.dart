@@ -206,6 +206,136 @@ class DueChips extends StatelessWidget {
   }
 }
 
+// ───────────────────────── 기본제원 ─────────────────────────
+
+/// 기본제원 카드 (정기검사기준 3.1). 탭하면 펼쳐짐.
+class EquipmentSpecCard extends StatefulWidget {
+  final EquipmentSpec? spec;
+  final bool initiallyExpanded;
+
+  const EquipmentSpecCard({
+    super.key,
+    required this.spec,
+    this.initiallyExpanded = false,
+  });
+
+  @override
+  State<EquipmentSpecCard> createState() => _EquipmentSpecCardState();
+}
+
+class _EquipmentSpecCardState extends State<EquipmentSpecCard> {
+  late bool _expanded = widget.initiallyExpanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.spec;
+    if (s == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text('기본제원 정보 없음 · 승강기번호를 확인해 주세요',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+      );
+    }
+
+    String fmt(num? v, String unit) => v == null ? '-' : '$v$unit';
+    final rows = <(String, String)>[
+      ('인증번호', s.certNo ?? '-'),
+      ('제조사', s.manufacturer ?? '-'),
+      ('층고', fmt(s.floorHeightM, ' m')),
+      ('경사도', fmt(s.inclineDeg, '°')),
+      ('공칭폭', fmt(s.nominalWidthMm, ' mm')),
+      ('정격속도', fmt(s.ratedSpeed, ' m/s')),
+      ('구동방식', s.driveType ?? '-'),
+      ('체인 윤활', s.lubrication ?? '-'),
+    ];
+
+    return Material(
+      color: AppColors.background,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => setState(() => _expanded = !_expanded),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.badge_outlined,
+                      size: 16, color: AppColors.textSecondary),
+                  const SizedBox(width: 6),
+                  Text('승강기번호 ${s.elevatorNo}',
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                        '${s.model ?? ''} · ${fmt(s.ratedSpeed, ' m/s')}',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textSecondary)),
+                  ),
+                  Icon(_expanded ? Icons.expand_less : Icons.expand_more,
+                      size: 18, color: AppColors.textSecondary),
+                ],
+              ),
+              if (_expanded) ...[
+                const SizedBox(height: 10),
+                for (final (label, value) in rows)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 72,
+                          child: Text(label,
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary)),
+                        ),
+                        Expanded(
+                          child: Text(value,
+                              style: const TextStyle(
+                                  fontSize: 12, color: AppColors.textPrimary)),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (s.notApplicable.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Text('해당없음 항목 (점검 시 자동 제외)',
+                      style: TextStyle(
+                          fontSize: 12, color: AppColors.textSecondary)),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final n in s.notApplicable)
+                        Pill(
+                            label: n,
+                            color: AppColors.textSecondary,
+                            background: AppColors.toggleBg),
+                    ],
+                  ),
+                ],
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ───────────────────────── 카드 / 목록 ─────────────────────────
 
 /// 흰색 둥근 카드
