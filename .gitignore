@@ -104,4 +104,4 @@ env.json
 *.jks
 *.keystore
 
-# 아오
+lib/main.dart
