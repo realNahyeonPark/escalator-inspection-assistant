@@ -49,11 +49,11 @@
 
 | 프레임 | 화면 | 파일 | 담당 |
 | --- | --- | --- | --- |
-| 1 | 설비 스캔 (QR/NFC, 최근 점검) | `screens/scan_screen.dart` | 박나현 |
-| 2 | 점검 기록 · 설비 이력 | `screens/home_screen.dart` | 박나현 |
-| 3 | 점검 항목 | `screens/inspection_screen.dart` | |
-| 5 | 음성 점검 | `screens/voice_inspection_screen.dart` | |
-| 4 | 점검 결과 확인·수정 | `screens/result_screen.dart` | |
+| 1 | 설비 스캔 (QR/NFC, 최근 점검) | `screens/scan_screen.dart` | 조해리 |
+| 2 | 점검 기록 · 설비 이력 | `screens/home_screen.dart` | 조해리 |
+| 3 | 점검 항목 | `screens/inspection_screen.dart` | 박나현 |
+| 5 | 음성 점검 | `screens/voice_inspection_screen.dart` | 박나현 |
+| 4 | 점검 결과 확인·수정 | `screens/result_screen.dart` | 박나현 |
 
 <!-- 스크린샷: docs/screenshots/ 에 이미지를 넣고 아래 주석을 풀어 주세요
 <p align="center">
