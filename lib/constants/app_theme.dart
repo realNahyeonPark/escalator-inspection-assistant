@@ -21,6 +21,8 @@ class AppColors {
   static const warning = Color(0xFFEA580C);
   static const warningBg = Color(0xFFFDEEE3);
   static const danger = Color(0xFFDC2626);
+  static const dangerBg = Color(0xFFFDE8E8);
+  static const primaryBg = Color(0xFFE8EFFD);
 }
 
 class AppTheme {
