@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 
 import '../constants/app_theme.dart';
-import '../models/mock_data.dart';
+import '../controllers/equipment_repository.dart';
 import '../widgets/common_widgets.dart';
+import '../widgets/equipment_sheet.dart';
 
 enum ScanMode { qr, nfc }
 
 /// 프레임 1 — 설비 스캔 (QR / NFC)
 ///
-/// 실제 스캔 연동:
-///  - QR  : mobile_scanner 패키지 → _ScannerBox 안의 박스를 MobileScanner 위젯으로 교체
-///  - NFC : nfc_manager 패키지 → _startNfcSession() 에서 NfcManager.instance.startSession
-/// 지금은 박스를 탭하면 스캔 성공으로 가정하고 점검 화면으로 이동함.
+/// 스캔 → EquipmentSheet(바텀시트)
+///   · 등록된 설비      : 이번 달 필수 항목 + [이력 보기] [점검 시작]
+///   · 온디바이스 DB 설비 : [등록하고 이력 가져오기]
+///   · DB에 없는 설비    : 이름/위치 입력 후 등록
+///
+/// 실제 스캔 연동 (지금은 박스를 탭하면 '테스트용 QR 선택' 창이 뜸):
+///  - QR  : mobile_scanner 패키지 → _ScannerBox 를 MobileScanner 위젯으로 교체하고
+///          onDetect 에서 _handleQr(barcode.rawValue!) 호출
+///  - NFC : nfc_manager 패키지 → 태그에서 읽은 문자열로 _handleQr 호출
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
 
@@ -20,11 +26,71 @@ class ScanScreen extends StatefulWidget {
 }
 
 class _ScanScreenState extends State<ScanScreen> {
+  final _repo = EquipmentRepository.instance;
   ScanMode _mode = ScanMode.qr;
 
-  void _onScanned(String equipmentId) {
-    // 프레임 3(점검 항목) 담당자 화면으로 이동. 라우트 이름은 main.dart 기준.
-    Navigator.pushNamed(context, '/inspect', arguments: equipmentId);
+  bool _looking = false;
+
+  /// QR/NFC 에서 읽은 문자열이 들어오는 단 하나의 입구
+  /// → GET /api/escalators/{escalatorId} (서버 안 되면 온디바이스 DB)
+  Future<void> _handleQr(String raw) async {
+    if (_looking) return;
+    setState(() => _looking = true);
+    final lookup = await _repo.lookup(raw);
+    if (!mounted) return;
+    setState(() => _looking = false);
+    await EquipmentSheet.show(context, lookup);
+  }
+
+  /// 에뮬레이터 확인용: 실제 카메라 대신 QR 내용을 골라서 스캔한 것처럼 처리
+  Future<void> _simulateScan() async {
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('테스트용 QR 선택', style: TextStyle(fontSize: 17)),
+        children: [
+          _option(ctx, 'esc-3', '3호기', '등록된 설비'),
+          _option(ctx, 'esc-7', '7호기', '새 설비 · 온디바이스 DB에 이력 있음'),
+          _option(ctx, '{"id":"esc-8"}', '8호기 (JSON QR)', '새 설비 · 이력 있음 · 누락 항목 있음'),
+          _option(ctx, 'esc-99', '알 수 없는 QR', 'DB에 없는 설비 → 직접 등록'),
+          const Divider(),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, '__reset__'),
+            child: const Text('테스트 데이터 초기화',
+                style: TextStyle(color: AppColors.danger)),
+          ),
+        ],
+      ),
+    );
+    if (picked == null || !mounted) return;
+
+    if (picked == '__reset__') {
+      await _repo.resetForTest();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('담당 설비를 처음 상태(1·2·3호기)로 되돌렸어요')),
+      );
+      return;
+    }
+    _handleQr(picked);
+  }
+
+  Widget _option(BuildContext ctx, String payload, String title, String desc) {
+    return SimpleDialogOption(
+      onPressed: () => Navigator.pop(ctx, payload),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title,
+              style: const TextStyle(
+                  fontSize: 15, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 2),
+          Text(desc,
+              style: const TextStyle(
+                  fontSize: 12, color: AppColors.textSecondary)),
+        ],
+      ),
+    );
   }
 
   @override
@@ -36,31 +102,61 @@ class _ScanScreenState extends State<ScanScreen> {
           subtitle: _mode == ScanMode.qr
               ? '설비의 QR 코드를 비춰주세요'
               : '설비의 NFC 태그에 휴대폰을 대주세요',
+          trailing: const OnDeviceChip(),
         ),
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            children: [
-              Center(
-                child: _ModeToggle(
-                  mode: _mode,
-                  onChanged: (m) => setState(() => _mode = m),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Center(
-                child: _ScannerBox(
-                  mode: _mode,
-                  onTap: () => _onScanned('esc-3'),
-                ),
-              ),
-              const SizedBox(height: 28),
-              const SectionLabel('최근 점검'),
-              for (final e in MockData.recentEquipments) ...[
-                EquipmentTile(equipment: e, onTap: () => _onScanned(e.id)),
-                const SizedBox(height: 10),
-              ],
-            ],
+          child: ListenableBuilder(
+            listenable: _repo,
+            builder: (context, _) {
+              final recent = _repo.recentEquipments();
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                children: [
+                  Center(
+                    child: _ModeToggle(
+                      mode: _mode,
+                      onChanged: (m) => setState(() => _mode = m),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Center(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        _ScannerBox(mode: _mode, onTap: _simulateScan),
+                        if (_looking)
+                          const CircularProgressIndicator(color: Colors.white),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Center(
+                    child: Text('박스를 탭하면 테스트용 QR을 고를 수 있어요',
+                        style: TextStyle(
+                            fontSize: 11, color: AppColors.textSecondary)),
+                  ),
+                  const SizedBox(height: 24),
+                  const SectionLabel('최근 점검'),
+                  for (final e in recent) ...[
+                    Builder(builder: (_) {
+                      final latest = _repo.latestOf(e.id);
+                      return EquipmentTile(
+                        equipment: e,
+                        subtitle: latest == null
+                            ? '${e.location} · 기록 없음'
+                            : '${e.location} · ${relativeDay(latest.date)}',
+                        trailing: latest == null
+                            ? null
+                            : Pill.status(latest.status,
+                                count: latest.cautionItems.length),
+                        onTap: () => _handleQr(e.id),
+                      );
+                    }),
+                    const SizedBox(height: 10),
+                  ],
+                ],
+              );
+            },
           ),
         ),
       ],
