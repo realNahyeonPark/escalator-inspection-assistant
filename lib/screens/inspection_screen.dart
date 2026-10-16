@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/inspection_item.dart';
 import 'voice_inspection_screen.dart';
+import '../widgets/common_app_header.dart'; // 공통 헤더 임포트
 
 class InspectionScreen extends StatefulWidget {
   const InspectionScreen({super.key});
@@ -27,59 +28,13 @@ class _InspectionScreenState extends State<InspectionScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xfff5f5f5),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: Colors.grey[700], size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
+      // 👈 공통 헤더 적용 (타이틀과 서브타이틀 지정)
+      appBar: const CommonAppHeader(
+        title: '점검 항목',
+        subtitle: '오늘 수행할 항목입니다',
       ),
       body: Column(
         children: [
-          // 상단 오프라인 상태 바
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            alignment: Alignment.centerRight,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xffe8f0fe),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.shield_outlined, color: Color(0xff4c6ef5), size: 14),
-                  SizedBox(width: 4),
-                  Text(
-                    '오프라인 작동',
-                    style: TextStyle(
-                      color: Color(0xff4c6ef5),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // 헤더 타이틀
-          Container(
-            color: Colors.white,
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('점검 항목', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text('오늘 수행할 항목입니다', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-              ],
-            ),
-          ),
           // 설비 정보 카드 (스캔된 에스컬레이터 정보)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
@@ -200,8 +155,7 @@ class _InspectionScreenState extends State<InspectionScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const VoiceInspectionScreen(itemName: '스텝체인'), 
-                    // 필요에 따라 어떤 항목을 점검하는지 이름을 넘겨줄 수 있습니다.
+                    builder: (context) => const VoiceInspectionScreen(itemName: '스텝체인'),
                   ),
                 );
               },

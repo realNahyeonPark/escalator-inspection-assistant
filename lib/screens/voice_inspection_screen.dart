@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'inspection_result_page.dart';
+import '../widgets/common_app_header.dart'; // 공통 헤더 임포트
 
 class VoiceInspectionScreen extends StatefulWidget {
   final String itemName; // 어떤 항목을 점검 중인지 받아옵니다 (예: '스텝체인')
@@ -46,65 +48,13 @@ class _VoiceInspectionScreenState extends State<VoiceInspectionScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xfff5f5f5),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: Colors.grey[700], size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
+      // 👈 공통 헤더 위젯 적용 (동적으로 전달받은 항목 이름 활용)
+      appBar: CommonAppHeader(
+        title: '${widget.itemName} 점검',
+        subtitle: '결과를 말씀해주세요',
       ),
       body: Column(
         children: [
-          // 상단 오프라인 상태 바
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            alignment: Alignment.centerRight,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xffe8f0fe),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.shield_outlined, color: Color(0xff4c6ef5), size: 14),
-                  SizedBox(width: 4),
-                  Text(
-                    '오프라인 작동',
-                    style: TextStyle(
-                      color: Color(0xff4c6ef5),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // 헤더 타이틀 (동적으로 전달받은 항목 이름 표시)
-          Container(
-            color: Colors.white,
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${widget.itemName} 점검',
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '결과를 말씀해주세요',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ),
           const Spacer(),
           // 중앙 마이크 아이콘 및 파동 효과 영역
           Center(
@@ -205,7 +155,13 @@ class _VoiceInspectionScreenState extends State<VoiceInspectionScreen>
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                Navigator.pop(context); // 이전 화면으로 돌아가기
+                // 결과 페이지로 이동
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const InspectionResultPage(),
+                  ),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xff4c6ef5),
