@@ -4,6 +4,7 @@ import '../constants/app_theme.dart';
 import '../controllers/equipment_repository.dart';
 import '../widgets/common_widgets.dart';
 import '../widgets/equipment_sheet.dart';
+import '../widgets/common_app_header.dart';
 
 enum ScanMode { qr, nfc }
 
@@ -31,63 +32,110 @@ class _ScanScreenState extends State<ScanScreen> {
 
   bool _looking = false;
 
-  /// QR/NFC 에서 읽은 문자열이 들어오는 단 하나의 입구
-  /// → GET /api/escalators/{escalatorId} (서버 안 되면 온디바이스 DB)
+  /// QR/NFC에서 읽은 문자열로 설비 조회
   Future<void> _handleQr(String raw) async {
     if (_looking) return;
+
     setState(() => _looking = true);
-    final lookup = await _repo.lookup(raw);
-    if (!mounted) return;
-    setState(() => _looking = false);
-    await EquipmentSheet.show(context, lookup);
+
+    try {
+      final lookup = await _repo.lookup(raw);
+
+      if (!mounted) return;
+
+      await EquipmentSheet.show(context, lookup);
+    } finally {
+      if (mounted) {
+        setState(() => _looking = false);
+      }
+    }
   }
 
-  /// 에뮬레이터 확인용: 실제 카메라 대신 QR 내용을 골라서 스캔한 것처럼 처리
+  /// 테스트용 QR 선택
   Future<void> _simulateScan() async {
     final picked = await showDialog<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('테스트용 QR 선택', style: TextStyle(fontSize: 17)),
+        title: const Text(
+          '테스트용 QR 선택',
+          style: TextStyle(fontSize: 17),
+        ),
         children: [
           _option(ctx, 'esc-3', '3호기', '등록된 설비'),
-          _option(ctx, 'esc-7', '7호기', '새 설비 · 온디바이스 DB에 이력 있음'),
-          _option(ctx, '{"id":"esc-8"}', '8호기 (JSON QR)', '새 설비 · 이력 있음 · 누락 항목 있음'),
-          _option(ctx, 'esc-99', '알 수 없는 QR', 'DB에 없는 설비 → 직접 등록'),
+          _option(
+            ctx,
+            'esc-7',
+            '7호기',
+            '새 설비 · 온디바이스 DB에 이력 있음',
+          ),
+          _option(
+            ctx,
+            '{"id":"esc-8"}',
+            '8호기 (JSON QR)',
+            '새 설비 · 이력 있음 · 누락 항목 있음',
+          ),
+          _option(
+            ctx,
+            'esc-99',
+            '알 수 없는 QR',
+            'DB에 없는 설비 → 직접 등록',
+          ),
           const Divider(),
           SimpleDialogOption(
             onPressed: () => Navigator.pop(ctx, '__reset__'),
-            child: const Text('테스트 데이터 초기화',
-                style: TextStyle(color: AppColors.danger)),
+            child: const Text(
+              '테스트 데이터 초기화',
+              style: TextStyle(color: AppColors.danger),
+            ),
           ),
         ],
       ),
     );
+
     if (picked == null || !mounted) return;
 
     if (picked == '__reset__') {
       await _repo.resetForTest();
+
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('담당 설비를 처음 상태(1·2·3호기)로 되돌렸어요')),
+        const SnackBar(
+          content: Text('담당 설비를 처음 상태(1·2·3호기)로 되돌렸어요'),
+        ),
       );
       return;
     }
-    _handleQr(picked);
+
+    await _handleQr(picked);
   }
 
-  Widget _option(BuildContext ctx, String payload, String title, String desc) {
+  Widget _option(
+    BuildContext ctx,
+    String payload,
+    String title,
+    String desc,
+  ) {
     return SimpleDialogOption(
       onPressed: () => Navigator.pop(ctx, payload),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: const TextStyle(
-                  fontSize: 15, fontWeight: FontWeight.w600)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 2),
-          Text(desc,
-              style: const TextStyle(
-                  fontSize: 12, color: AppColors.textSecondary)),
+          Text(
+            desc,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
         ],
       ),
     );
@@ -95,71 +143,97 @@ class _ScanScreenState extends State<ScanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        PageHeader(
-          title: '설비 스캔',
-          subtitle: _mode == ScanMode.qr
-              ? '설비의 QR 코드를 비춰주세요'
-              : '설비의 NFC 태그에 휴대폰을 대주세요',
-          trailing: const OnDeviceChip(),
-        ),
-        Expanded(
-          child: ListenableBuilder(
-            listenable: _repo,
-            builder: (context, _) {
-              final recent = _repo.recentEquipments();
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                children: [
-                  Center(
-                    child: _ModeToggle(
-                      mode: _mode,
-                      onChanged: (m) => setState(() => _mode = m),
+    return Scaffold(
+      appBar: CommonAppHeader(
+        title: '설비 스캔',
+        subtitle: _mode == ScanMode.qr
+            ? '설비의 QR 코드를 비춰주세요'
+            : '설비의 NFC 태그에 휴대폰을 대주세요',
+        showBackButton: false,
+        showOfflineBadge: true,
+      ),
+      body: Column(
+        children: [
+          // 기존 PageHeader에 있던 설비 상태 표시
+          // Padding(
+          //   padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          //   child: const Align(
+          //     alignment: Alignment.centerRight,
+          //     child: OnDeviceChip(),
+          //   ),
+          //),
+          Expanded(
+            child: ListenableBuilder(
+              listenable: _repo,
+              builder: (context, _) {
+                final recent = _repo.recentEquipments();
+
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  children: [
+                    Center(
+                      child: _ModeToggle(
+                        mode: _mode,
+                        onChanged: (m) => setState(() => _mode = m),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Center(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        _ScannerBox(mode: _mode, onTap: _simulateScan),
-                        if (_looking)
-                          const CircularProgressIndicator(color: Colors.white),
-                      ],
+                    const SizedBox(height: 20),
+                    Center(
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          _ScannerBox(
+                            mode: _mode,
+                            onTap: _simulateScan,
+                          ),
+                          if (_looking)
+                            const CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Center(
-                    child: Text('박스를 탭하면 테스트용 QR을 고를 수 있어요',
+                    const SizedBox(height: 8),
+                    const Center(
+                      child: Text(
+                        '박스를 탭하면 테스트용 QR을 고를 수 있어요',
                         style: TextStyle(
-                            fontSize: 11, color: AppColors.textSecondary)),
-                  ),
-                  const SizedBox(height: 24),
-                  const SectionLabel('최근 점검'),
-                  for (final e in recent) ...[
-                    Builder(builder: (_) {
-                      final latest = _repo.latestOf(e.id);
-                      return EquipmentTile(
-                        equipment: e,
-                        subtitle: latest == null
-                            ? '${e.location} · 기록 없음'
-                            : '${e.location} · ${relativeDay(latest.date)}',
-                        trailing: latest == null
-                            ? null
-                            : Pill.status(latest.status,
-                                count: latest.cautionItems.length),
-                        onTap: () => _handleQr(e.id),
-                      );
-                    }),
-                    const SizedBox(height: 10),
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const SectionLabel('최근 점검'),
+                    for (final e in recent) ...[
+                      Builder(
+                        builder: (_) {
+                          final latest = _repo.latestOf(e.id);
+
+                          return EquipmentTile(
+                            equipment: e,
+                            subtitle: latest == null
+                                ? '${e.location} · 기록 없음'
+                                : '${e.location} · ${relativeDay(latest.date)}',
+                            trailing: latest == null
+                                ? null
+                                : Pill.status(
+                                    latest.status,
+                                    count: latest.cautionItems.length,
+                                  ),
+                            onTap: () => _handleQr(e.id),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                    ],
                   ],
-                ],
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -169,12 +243,16 @@ class _ModeToggle extends StatelessWidget {
   final ScanMode mode;
   final ValueChanged<ScanMode> onChanged;
 
-  const _ModeToggle({required this.mode, required this.onChanged});
+  const _ModeToggle({
+    required this.mode,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
     Widget item(ScanMode m, String label) {
       final selected = mode == m;
+
       return GestureDetector(
         onTap: () => onChanged(m),
         child: AnimatedContainer(
@@ -187,19 +265,24 @@ class _ModeToggle extends StatelessWidget {
             boxShadow: selected
                 ? [
                     BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1))
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
                   ]
                 : null,
           ),
           alignment: Alignment.center,
-          child: Text(label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: selected ? AppColors.primary : AppColors.textSecondary,
-              )),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: selected
+                  ? AppColors.primary
+                  : AppColors.textSecondary,
+            ),
+          ),
         ),
       );
     }
@@ -212,18 +295,24 @@ class _ModeToggle extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [item(ScanMode.qr, 'QR'), item(ScanMode.nfc, 'NFC')],
+        children: [
+          item(ScanMode.qr, 'QR'),
+          item(ScanMode.nfc, 'NFC'),
+        ],
       ),
     );
   }
 }
 
-/// 어두운 스캐너 박스 (QR: 모서리 가이드 + 움직이는 스캔 라인 / NFC: 아이콘)
+/// 어두운 스캐너 박스
 class _ScannerBox extends StatefulWidget {
   final ScanMode mode;
   final VoidCallback onTap;
 
-  const _ScannerBox({required this.mode, required this.onTap});
+  const _ScannerBox({
+    required this.mode,
+    required this.onTap,
+  });
 
   @override
   State<_ScannerBox> createState() => _ScannerBoxState();
@@ -260,11 +349,13 @@ class _ScannerBoxState extends State<_ScannerBox>
             ? Stack(
                 children: [
                   const Positioned.fill(
-                      child: CustomPaint(painter: _CornerPainter())),
-                  // 스캔 라인
+                    child: CustomPaint(
+                      painter: _CornerPainter(),
+                    ),
+                  ),
                   AnimatedBuilder(
                     animation: _anim,
-                    builder: (_, __) => Positioned(
+                    builder: (_, _) => Positioned(
                       left: 20,
                       right: 20,
                       top: 20 + (size - 40) * _anim.value,
@@ -274,16 +365,20 @@ class _ScannerBoxState extends State<_ScannerBox>
                           color: AppColors.primary,
                           boxShadow: [
                             BoxShadow(
-                                color: AppColors.primary.withOpacity(0.6),
-                                blurRadius: 8)
+                              color: AppColors.primary.withValues(alpha: 0.6),
+                              blurRadius: 8,
+                            ),
                           ],
                         ),
                       ),
                     ),
                   ),
                   const Center(
-                    child: Icon(Icons.qr_code_2,
-                        size: 44, color: Color(0xFF8A9099)),
+                    child: Icon(
+                      Icons.qr_code_2,
+                      size: 44,
+                      color: Color(0xFF8A9099),
+                    ),
                   ),
                 ],
               )
@@ -293,11 +388,16 @@ class _ScannerBoxState extends State<_ScannerBox>
                   height: size - 40,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
-                    border:
-                        Border.all(color: const Color(0xFF4A505A), width: 2),
+                    border: Border.all(
+                      color: const Color(0xFF4A505A),
+                      width: 2,
+                    ),
                   ),
-                  child: const Icon(Icons.nfc,
-                      size: 52, color: Color(0xFF8A9099)),
+                  child: const Icon(
+                    Icons.nfc,
+                    size: 52,
+                    color: Color(0xFF8A9099),
+                  ),
                 ),
               ),
       ),
@@ -316,22 +416,36 @@ class _CornerPainter extends CustomPainter {
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
-    const m = 16.0; // 여백
-    const l = 26.0; // 모서리 길이
-    final w = size.width, h = size.height;
+
+    const m = 16.0;
+    const l = 26.0;
+
+    final w = size.width;
+    final h = size.height;
 
     // 좌상
     canvas.drawLine(const Offset(m, m), const Offset(m + l, m), p);
     canvas.drawLine(const Offset(m, m), const Offset(m, m + l), p);
+
     // 우상
     canvas.drawLine(Offset(w - m, m), Offset(w - m - l, m), p);
     canvas.drawLine(Offset(w - m, m), Offset(w - m, m + l), p);
+
     // 좌하
     canvas.drawLine(Offset(m, h - m), Offset(m + l, h - m), p);
     canvas.drawLine(Offset(m, h - m), Offset(m, h - m - l), p);
+
     // 우하
-    canvas.drawLine(Offset(w - m, h - m), Offset(w - m - l, h - m), p);
-    canvas.drawLine(Offset(w - m, h - m), Offset(w - m, h - m - l), p);
+    canvas.drawLine(
+      Offset(w - m, h - m),
+      Offset(w - m - l, h - m),
+      p,
+    );
+    canvas.drawLine(
+      Offset(w - m, h - m),
+      Offset(w - m, h - m - l),
+      p,
+    );
   }
 
   @override

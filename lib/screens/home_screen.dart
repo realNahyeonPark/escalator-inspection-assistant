@@ -4,6 +4,8 @@ import '../constants/app_theme.dart';
 import '../controllers/equipment_repository.dart';
 import '../models/equipment.dart';
 import '../widgets/common_widgets.dart';
+import '../widgets/common_app_header.dart';
+import '../widgets/offline_badge.dart';
 
 /// 프레임 2 (왼쪽) — 점검 기록: 내 담당 설비 검색 + 목록
 class HomeScreen extends StatefulWidget {
@@ -21,10 +23,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const PageHeader(
+        const CommonAppHeader(
           title: '점검 기록',
           subtitle: '설비별 점검 기록을 확인합니다',
-          trailing: OnDeviceChip(),
+          showBackButton: false,
+          showOfflineBadge: true,
         ),
         Expanded(
           child: ListenableBuilder(
@@ -139,12 +142,12 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            PageHeader(
+            CommonAppHeader(
               title: '${e.shortName} 이력',
               subtitle: e.spec == null
                   ? '최근 점검 기록을 확인합니다'
                   : '승강기번호 ${e.spec!.elevatorNo} · ${e.location}',
-              onBack: () => Navigator.of(context).pop(),
+              onBackPressed: () => Navigator.of(context).pop(),
             ),
             Expanded(
               child: RefreshIndicator(

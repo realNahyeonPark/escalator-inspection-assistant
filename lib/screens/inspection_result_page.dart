@@ -11,7 +11,6 @@ class InspectionResultPage extends StatefulWidget {
 }
 
 class _InspectionResultPageState extends State<InspectionResultPage> {
-  // 데이터를 하나의 리스트로 관리하여 코드 중복을 싹 없앱니다!
   final List<Map<String, dynamic>> results = [
     {
       'title': '스텝체인',
@@ -27,7 +26,7 @@ class _InspectionResultPageState extends State<InspectionResultPage> {
     },
     {
       'title': '구동체인',
-      'status': null, // 아직 결과 없음
+      'status': null,
       'remarks': null,
       'speech': null,
     },

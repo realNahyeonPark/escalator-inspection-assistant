@@ -77,7 +77,7 @@ class PageHeader extends StatelessWidget {
               ],
             ),
           ),
-          if (trailing != null) trailing!,
+          ?trailing,
         ],
       ),
     );
@@ -409,7 +409,7 @@ class EquipmentTile extends StatelessWidget {
               ],
             ),
           ),
-          if (trailing != null) trailing!,
+          ?trailing,
         ],
       ),
     );
