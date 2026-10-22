@@ -100,7 +100,7 @@ class InspectionCard extends StatelessWidget {
                               vertical: 12,
                             ),
                           ),
-                          child: const Text("직접 점검"),
+                          child: const Text("직접 입력"),
                         ),
                       ),
                     ],

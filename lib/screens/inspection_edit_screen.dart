@@ -2,21 +2,31 @@ import 'package:flutter/material.dart';
 import '../widgets/common_app_header.dart'; // 공통 헤더 임포트
 
 class InspectionEditScreen extends StatefulWidget {
-  final String itemName; // 점검 항목 이름 (예: '스텝체인')
-  final String initialStatus; // 기존 상태 (예: '주의관찰')
-  final String initialRemarks; // 기존 특기사항 (예: '신장 의심')
-  final String initialSpeech; // 기존 발화 내용
+  final String itemName;
+  final String initialStatus;
+  final String initialRemarks;
+  final String initialSpeech;
+
+  // 헤더 제목과 부제목
+  final String headerTitle;
+  final String headerSubtitle;
 
   const InspectionEditScreen({
     super.key,
     required this.itemName,
     this.initialStatus = '주의관찰',
     this.initialRemarks = '신장 의심',
-    this.initialSpeech = '스텝체인이 좀 늘어난 느낌이고 소리도 조금 나요.',
+    this.initialSpeech =
+        '스텝체인이 좀 늘어난 느낌이고 소리도 조금 나요.',
+
+    // 기본값을 지정하므로 required를 붙이지 않음
+    this.headerTitle = '점검 결과 수정',
+    this.headerSubtitle = '잘못 인식된 정보를 수정합니다',
   });
 
   @override
-  State<InspectionEditScreen> createState() => _InspectionEditScreenState();
+  State<InspectionEditScreen> createState() =>
+      _InspectionEditScreenState();
 }
 
 class _InspectionEditScreenState extends State<InspectionEditScreen> {
@@ -98,9 +108,9 @@ class _InspectionEditScreenState extends State<InspectionEditScreen> {
     return Scaffold(
       backgroundColor: const Color(0xfff5f5f5),
       // 👈 공통 헤더 위젯 적용 (PreferredSizeWidget 구현체이므로 appBar에 바로 장착 가능)
-      appBar: const CommonAppHeader(
-        title: '점검 결과 수정',
-        subtitle: '잘못 인식된 정보를 수정합니다',
+      appBar: CommonAppHeader(
+        title: widget.headerTitle,
+        subtitle: widget.headerSubtitle,
       ),
       body: Column(
         children: [

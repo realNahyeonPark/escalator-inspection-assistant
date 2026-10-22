@@ -5,7 +5,6 @@ import '../controllers/equipment_repository.dart';
 import '../models/equipment.dart';
 import '../widgets/common_widgets.dart';
 import '../widgets/common_app_header.dart';
-import '../widgets/offline_badge.dart';
 
 /// 프레임 2 (왼쪽) — 점검 기록: 내 담당 설비 검색 + 목록
 class HomeScreen extends StatefulWidget {

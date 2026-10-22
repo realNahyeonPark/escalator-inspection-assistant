@@ -1,21 +1,19 @@
-import 'package:esc_application/models/inspection_item.dart';
+
 import 'package:flutter/material.dart';
-import 'inspection_result_page.dart';
 import '../widgets/common_app_header.dart';
-import '../models/inspection_item.dart';
 
 class VoiceInspectionScreen extends StatefulWidget {
   final String equipmentId;
   final String itemId;
   final String itemName;
-  final List<InspectionItem> inspectionItems;
+  final bool isLastItem;
 
   const VoiceInspectionScreen({
     super.key,
     required this.equipmentId,
     required this.itemId,
     required this.itemName,
-    required this.inspectionItems,
+    required this.isLastItem,
   });
 
   @override
@@ -58,31 +56,18 @@ class _VoiceInspectionScreenState extends State<VoiceInspectionScreen>
     });
   }
 
-  // 점검 결과 페이지로 이동
-  void _openResultPage() {
-    // 페이지 이동 전에 애니메이션 정지
+  // 현재 점검 항목 완료 후 InspectionScreen으로 복귀
+  void _finishCurrentItem() {
     if (isListening) {
       setState(() {
         isListening = false;
       });
+
       _waveController.stop();
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        // 다음 페이지에서 설비 및 점검 항목 정보를 조회할 수 있도록 전달
-        settings: RouteSettings(
-        arguments: {
-          'equipmentId': widget.equipmentId,
-          'itemId': widget.itemId,
-          'itemName': widget.itemName,
-          'inspectionItems': widget.inspectionItems,
-        },
-      ),
-        builder: (context) => const InspectionResultPage(),
-      ),
-    );
+    // true를 반환하면 InspectionScreen에서 다음 항목으로 진행
+    Navigator.pop(context, true);
   }
 
   @override
@@ -214,13 +199,13 @@ class _VoiceInspectionScreenState extends State<VoiceInspectionScreen>
 
           const Spacer(),
 
-          // 점검 결과 페이지로 이동
+          // 현재 항목 완료 후 다음 항목 또는 결과 확인
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.white,
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _openResultPage,
+              onPressed: _finishCurrentItem,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xff4c6ef5),
                 foregroundColor: Colors.white,
@@ -229,9 +214,9 @@ class _VoiceInspectionScreenState extends State<VoiceInspectionScreen>
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                '점검 완료',
-                style: TextStyle(
+              child: Text(
+                widget.isLastItem ? '점검 결과 확인' : '다음 항목',
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),

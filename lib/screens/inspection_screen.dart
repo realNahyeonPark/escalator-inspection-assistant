@@ -6,6 +6,7 @@ import '../controllers/equipment_repository.dart';
 import '../widgets/common_app_header.dart';
 import '../widgets/common_widgets.dart';
 import 'voice_inspection_screen.dart';
+import 'inspection_result_page.dart';
 
 class InspectionScreen extends StatefulWidget {
   const InspectionScreen({super.key});
@@ -85,19 +86,8 @@ void didChangeDependencies() {
   /// 음성 점검 화면 열기
   ///
   /// 아직 완료하지 않은 항목 중 첫 번째 항목부터 점검
+
 Future<void> _startVoiceInspection() async {
-  final pendingItems =
-      inspectionItems.where((item) => !item.isChecked);
-
-  if (pendingItems.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('모든 점검 항목을 완료했어요.'),
-      ),
-    );
-    return;
-  }
-
   final equipmentId = _equipmentId;
 
   if (equipmentId == null || equipmentId.isEmpty) {
@@ -109,26 +99,52 @@ Future<void> _startVoiceInspection() async {
     return;
   }
 
-  final nextItem = pendingItems.first;
+  // 체크되지 않은 항목만 점검 대상으로 구성
+  final pendingItems = inspectionItems
+      .where((item) => !item.isChecked)
+      .toList();
 
-  final completed = await Navigator.push<bool>(
+  // 미완료 항목을 하나씩 순서대로 점검
+  for (var i = 0; i < pendingItems.length; i++) {
+    final item = pendingItems[i];
+
+    final completed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VoiceInspectionScreen(
+          equipmentId: equipmentId,
+          itemId: item.id,
+          itemName: item.title,
+          isLastItem: i == pendingItems.length - 1,
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    // 점검 완료 버튼이 아니라 뒤로가기를 눌렀으면
+    // 전체 점검 흐름을 중단
+    if (completed != true) return;
+  }
+
+  if (!mounted) return;
+
+  // 모든 미완료 항목의 음성 점검 화면을 거친 뒤
+  // 결과 페이지를 한 번만 표시
+  Navigator.pushReplacement(
     context,
     MaterialPageRoute(
-      builder: (context) => VoiceInspectionScreen(
-      equipmentId: equipmentId,
-      itemId: nextItem.id,
-      itemName: nextItem.title,
-      inspectionItems: inspectionItems,
-    ),
+      settings: RouteSettings(
+        arguments: {
+          'equipmentId': equipmentId,
+          'inspectionItems': inspectionItems,
+        },
+      ),
+      builder: (context) => const InspectionResultPage(),
     ),
   );
-
-  if (!mounted || completed != true) return;
-
-  setState(() {
-    nextItem.isChecked = true;
-  });
 }
+
 
   @override
   Widget build(BuildContext context) {

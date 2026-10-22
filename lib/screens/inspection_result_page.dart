@@ -25,7 +25,7 @@ class _InspectionResultPageState
   // 1: 핸드레일, 4: 스텝체인
   static const Set<String> _normalCardItemIds = {'1', '4'};
 
-  // 화면에 표시할 결과 목록
+  // 점검 결과 목록
   final List<Map<String, dynamic>> results = [
     {
       'id': '4',
@@ -65,12 +65,12 @@ class _InspectionResultPageState
     }
   }
 
-  /// 체크박스 상태를 기준으로 결과 카드 구성
+  /// 체크박스 상태에 따라 결과 카드 구성
   void _buildResultsFromChecklist() {
     results.clear();
 
-    // 1. 핸드레일과 스텝체인은 기존 결과 카드 유지
-    // 체크하지 않은 항목만 결과 카드에 표시
+    // 핸드레일과 스텝체인:
+    // 체크되지 않은 항목만 기존 결과 카드로 표시
     for (final itemId in ['4', '1']) {
       for (final item in _inspectionItems) {
         if (item.id != itemId || item.isChecked) continue;
@@ -96,8 +96,8 @@ class _InspectionResultPageState
       }
     }
 
-    // 2. 나머지 부품은 체크하지 않은 경우에만
-    // status가 null인 경고 카드로 표시
+    // 나머지 부품:
+    // 체크되지 않은 경우 결과 없음 카드로 표시
     for (final item in _inspectionItems) {
       if (item.isChecked) continue;
       if (_normalCardItemIds.contains(item.id)) continue;
@@ -112,7 +112,79 @@ class _InspectionResultPageState
     }
   }
 
-  /// 기존 점검 결과 저장 확인 모달
+  /// 기존 결과 수정 화면 열기
+  Future<void> _editResult(int index) async {
+    final item = results[index];
+
+    final res = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => InspectionEditScreen(
+          itemName: item['title'],
+          initialStatus: item['status'] ?? '양호',
+          initialRemarks: item['remarks'] ?? '',
+          initialSpeech:
+              (item['speech'] ?? '').replaceAll("'", ""),
+
+          // 기존 결과 수정 화면의 헤더
+          headerTitle: '점검 결과 수정',
+          headerSubtitle: '잘못 인식된 정보를 수정합니다',
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (res is Map<String, String>) {
+      setState(() {
+        results[index]['status'] = res['status'];
+        results[index]['remarks'] = res['remarks'];
+        results[index]['speech'] = res['speech'];
+      });
+    }
+  }
+
+  /// '이상 기록 없음' 버튼:
+  /// 수정 화면으로 이동하지 않고 바로 정상 카드로 변경
+  void _recordNoIssue(int index) {
+    setState(() {
+      results[index]['status'] = '양호';
+      results[index]['remarks'] = '음성 인식 없이 정상 기록';
+      results[index]['speech'] = null;
+    });
+  }
+
+  /// '직접 입력' 버튼:
+  /// 제목이 '점검 결과 입력'인 화면 열기
+  Future<void> _directInput(int index) async {
+    final item = results[index];
+
+    final res = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => InspectionEditScreen(
+          itemName: item['title'],
+          initialStatus: '양호',
+          initialRemarks: '',
+          initialSpeech: '',
+          headerTitle: '점검 결과 입력',
+          headerSubtitle: '점검 결과를 직접 입력합니다',
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (res is Map<String, String>) {
+      setState(() {
+        results[index]['status'] = res['status'];
+        results[index]['remarks'] = res['remarks'];
+        results[index]['speech'] = res['speech'];
+      });
+    }
+  }
+
+  /// 점검 결과 저장 확인 모달
   Future<void> _confirmSave() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -139,8 +211,8 @@ class _InspectionResultPageState
 
     if (!mounted || confirmed != true) return;
 
-    // TODO: 설비 ID와 결과 목록을 서버/DB에 저장
-    // 현재는 실제 저장 없이 메인 화면으로 이동
+    // TODO: _equipmentId와 results를 서버 또는 DB에 저장
+    // 현재는 실제 데이터 저장 없이 메인 화면으로 이동
     Navigator.of(context).pushNamedAndRemoveUntil(
       '/',
       (route) => false,
@@ -173,71 +245,26 @@ class _InspectionResultPageState
                     remarks: item['remarks'],
                     speech: item['speech'],
 
-                    // '이상 기록 없음' 버튼
-                    onEditPressed: () async {
-                      final res = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              InspectionEditScreen(
-                            itemName: item['title'],
-                            initialStatus:
-                                item['status'] ?? '양호',
-                            initialRemarks:
-                                item['remarks'] ?? '',
-                            initialSpeech:
-                                (item['speech'] ?? '')
-                                    .replaceAll("'", ""),
-                          ),
-                        ),
-                      );
-
-                      if (!mounted) return;
-
-                      if (res is Map<String, String>) {
-                        setState(() {
-                          results[index]['status'] =
-                              res['status'];
-                          results[index]['remarks'] =
-                              res['remarks'];
-                          results[index]['speech'] =
-                              res['speech'];
-                        });
+                    // 결과가 없으면 정상으로 바로 변경하고,
+                    // 기존 결과 카드라면 수정 화면 열기
+                    onEditPressed: () {
+                      if (item['status'] == null) {
+                        _recordNoIssue(index);
+                      } else {
+                        _editResult(index);
                       }
                     },
 
-                    // '직접 점검' 버튼
-                    onDirectCheckPressed: () async {
-                      final res = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              InspectionEditScreen(
-                            itemName: item['title'],
-                            initialStatus: '양호',
-                          ),
-                        ),
-                      );
-
-                      if (!mounted) return;
-
-                      if (res is Map<String, String>) {
-                        setState(() {
-                          results[index]['status'] =
-                              res['status'];
-                          results[index]['remarks'] =
-                              res['remarks'];
-                          results[index]['speech'] =
-                              res['speech'];
-                        });
-                      }
+                    // '직접 입력' 버튼
+                    onDirectCheckPressed: () {
+                      _directInput(index);
                     },
                   );
                 },
               ),
             ),
 
-            // 기존 점검 결과 저장 버튼 및 확인 모달 유지
+            // 하단 점검 결과 저장 버튼
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16.0),
