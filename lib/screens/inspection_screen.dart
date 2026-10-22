@@ -21,7 +21,6 @@ class _InspectionScreenState extends State<InspectionScreen> {
   Equipment? _equipment;
   bool _routeArgumentsRead = false;
 
-  // 처음 시작할 때 체크박스를 모두 미완료 상태로 초기화
   final List<InspectionItem> inspectionItems = [
     InspectionItem(
       id: '1',
@@ -68,56 +67,68 @@ class _InspectionScreenState extends State<InspectionScreen> {
   ];
 
   /// 라우트에서 전달받은 설비 ID로 실제 설비 정보를 조회
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+@override
+void didChangeDependencies() {
+  super.didChangeDependencies();
 
-    if (_routeArgumentsRead) return;
-    _routeArgumentsRead = true;
+  if (_routeArgumentsRead) return;
+  _routeArgumentsRead = true;
 
-    final arguments = ModalRoute.of(context)?.settings.arguments;
+  final arguments = ModalRoute.of(context)?.settings.arguments;
 
-    if (arguments is String && arguments.isNotEmpty) {
-      _equipmentId = arguments;
-
-      // 저장소에 등록된 설비 중 전달받은 ID와 일치하는 설비 조회
-      final matches = _repo
-          .recentEquipments()
-          .where((equipment) => equipment.id == arguments);
-
-      if (matches.isNotEmpty) {
-        _equipment = matches.first;
-      }
-    }
+  if (arguments is String && arguments.isNotEmpty) {
+    _equipmentId = arguments;
+    _equipment = _repo.equipmentOf(arguments);
   }
+}
 
   /// 음성 점검 화면 열기
   ///
   /// 아직 완료하지 않은 항목 중 첫 번째 항목부터 점검
-  void _startVoiceInspection() {
-    final pendingItems =
-        inspectionItems.where((item) => !item.isChecked);
+Future<void> _startVoiceInspection() async {
+  final pendingItems =
+      inspectionItems.where((item) => !item.isChecked);
 
-    if (pendingItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('모든 점검 항목을 완료했어요.'),
-        ),
-      );
-      return;
-    }
-
-    final nextItem = pendingItems.first;
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => VoiceInspectionScreen(
-          itemName: nextItem.title,
-        ),
+  if (pendingItems.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('모든 점검 항목을 완료했어요.'),
       ),
     );
+    return;
   }
+
+  final equipmentId = _equipmentId;
+
+  if (equipmentId == null || equipmentId.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('설비 정보를 확인할 수 없습니다.'),
+      ),
+    );
+    return;
+  }
+
+  final nextItem = pendingItems.first;
+
+  final completed = await Navigator.push<bool>(
+    context,
+    MaterialPageRoute(
+      builder: (context) => VoiceInspectionScreen(
+      equipmentId: equipmentId,
+      itemId: nextItem.id,
+      itemName: nextItem.title,
+      inspectionItems: inspectionItems,
+    ),
+    ),
+  );
+
+  if (!mounted || completed != true) return;
+
+  setState(() {
+    nextItem.isChecked = true;
+  });
+}
 
   @override
   Widget build(BuildContext context) {
@@ -301,28 +312,8 @@ class _InspectionScreenState extends State<InspectionScreen> {
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: item.cycle == '월간'
-                              ? const Color(0xffe8f0fe)
-                              : const Color(0xfff3e8ff),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          item.cycle,
-                          style: TextStyle(
-                            color: item.cycle == '월간'
-                                ? const Color(0xff4c6ef5)
-                                : const Color(0xffa55eea),
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                      // 공통 Pill 위젯으로 점검 주기 표시
+                      Pill.cycle(item.cycle),
                     ],
                   ),
                 );

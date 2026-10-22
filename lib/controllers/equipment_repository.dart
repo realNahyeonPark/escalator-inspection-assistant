@@ -91,6 +91,7 @@ class EquipmentRepository extends ChangeNotifier {
   // ───────────── 설비 목록 ─────────────
 
   Equipment? _resolve(String id) => _custom[id] ?? OnDeviceDb.find(id);
+  Equipment? equipmentOf(String id) => _resolve(id); //id로 설비조회
 
   bool isMine(String id) => _mineIds.contains(id);
 

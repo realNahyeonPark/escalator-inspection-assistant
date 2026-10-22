@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'common_widgets.dart';
 
 class InspectionCard extends StatelessWidget {
   final String title;
@@ -6,7 +7,7 @@ class InspectionCard extends StatelessWidget {
   final String? remarks;
   final String? speech;
   final VoidCallback onEditPressed;
-  final VoidCallback? onDirectCheckPressed; // 구동체인처럼 결과가 없을 때용
+  final VoidCallback? onDirectCheckPressed;
 
   const InspectionCard({
     super.key,
@@ -20,7 +21,7 @@ class InspectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. 점검 결과가 없는 경우 (Missing Card)
+    // 1. 점검 결과가 없는 경우
     if (statusText == null) {
       return Container(
         decoration: BoxDecoration(
@@ -39,7 +40,11 @@ class InspectionCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.warning, color: Colors.amber[800], size: 40),
+            Icon(
+              Icons.warning,
+              color: Colors.amber[800],
+              size: 40,
+            ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -47,25 +52,34 @@ class InspectionCard extends StatelessWidget {
                 children: [
                   Text(
                     "$title 점검 결과가 없습니다.",
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     "이상 없음으로 기록할까요?",
-                    style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 14,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: onEditPressed, // 여기선 보통 직접 입력으로 연결하거나 수정창 띄움
+                          onPressed: onEditPressed,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF8B4513),
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                            ),
                           ),
                           child: const Text("이상 기록 없음"),
                         ),
@@ -76,10 +90,15 @@ class InspectionCard extends StatelessWidget {
                           onPressed: onDirectCheckPressed,
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.grey[800],
-                            side: BorderSide(color: Colors.grey[300]!),
+                            side: BorderSide(
+                              color: Colors.grey[300]!,
+                            ),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                            ),
                           ),
                           child: const Text("직접 점검"),
                         ),
@@ -94,28 +113,13 @@ class InspectionCard extends StatelessWidget {
       );
     }
 
-    // 2. 일반 점검 결과 카드 (스텝체인, 핸드레일, 구동체인 완료 시)
-    Color accentColor;
-    Color statusColor;
-    Color statusBgColor;
+    // 2. 공통 Pill 위젯 재사용
+    final statusBadge = Pill.inspectionStatus(statusText!);
 
-    switch (statusText) {
-      case '양호':
-        accentColor = const Color(0xFF32A852);
-        statusColor = const Color(0xFF32A852);
-        statusBgColor = const Color(0xFFE8F7EE);
-        break;
-      case '수리필요':
-        accentColor = const Color(0xFFE74C3C);
-        statusColor = const Color(0xFFE74C3C);
-        statusBgColor = const Color(0xFFFDEDEC);
-        break;
-      default: // 주의관찰 등
-        accentColor = const Color(0xFF8B4513);
-        statusColor = const Color(0xFFF78F45);
-        statusBgColor = const Color(0xFFFFF2E8);
-    }
+    // 카드 왼쪽 강조선도 배지 색상과 통일
+    final accentColor = statusBadge.color;
 
+    // 3. 일반 점검 결과 카드
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -154,36 +158,35 @@ class InspectionCard extends StatelessWidget {
                       Text(
                         title,
                         style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: statusBgColor,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          statusText!,
-                          style: TextStyle(
-                              color: statusColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
+
+                      // 공통 배지 사용
+                      statusBadge,
                     ],
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "상태: $statusText | ${remarks ?? ''}",
-                    style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                    "상태: ${statusBadge.label} | ${remarks ?? ''}",
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 14,
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  const Divider(color: Colors.grey, height: 1),
+                  const Divider(
+                    color: Colors.grey,
+                    height: 1,
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     speech ?? '',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Align(
@@ -193,7 +196,9 @@ class InspectionCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(15),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.grey[100],
                           borderRadius: BorderRadius.circular(15),
@@ -201,12 +206,18 @@ class InspectionCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.edit, size: 16, color: Colors.blue[600]),
+                            Icon(
+                              Icons.edit,
+                              size: 16,
+                              color: Colors.blue[600],
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               "수정",
                               style: TextStyle(
-                                  color: Colors.blue[600], fontSize: 12),
+                                color: Colors.blue[600],
+                                fontSize: 12,
+                              ),
                             ),
                           ],
                         ),

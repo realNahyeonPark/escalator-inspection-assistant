@@ -23,94 +23,94 @@ String relativeDay(DateTime d) {
 
 // ───────────────────────── 헤더 ─────────────────────────
 
-/// 상단 제목 + 부제목 (뒤로가기 버튼, 오른쪽 위젯 선택)
-class PageHeader extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final VoidCallback? onBack;
-  final Widget? trailing;
+// /// 상단 제목 + 부제목 (뒤로가기 버튼, 오른쪽 위젯 선택)
+// class PageHeader extends StatelessWidget {
+//   final String title;
+//   final String subtitle;
+//   final VoidCallback? onBack;
+//   final Widget? trailing;
 
-  const PageHeader({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    this.onBack,
-    this.trailing,
-  });
+//   const PageHeader({
+//     super.key,
+//     required this.title,
+//     required this.subtitle,
+//     this.onBack,
+//     this.trailing,
+//   });
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.surface,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-      child: Row(
-        children: [
-          if (onBack != null) ...[
-            Material(
-              color: AppColors.toggleBg,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: onBack,
-                child: const Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Icon(Icons.chevron_left,
-                      size: 20, color: AppColors.textSecondary),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary)),
-                const SizedBox(height: 2),
-                Text(subtitle,
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary)),
-              ],
-            ),
-          ),
-          ?trailing,
-        ],
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       color: AppColors.surface,
+//       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+//       child: Row(
+//         children: [
+//           if (onBack != null) ...[
+//             Material(
+//               color: AppColors.toggleBg,
+//               shape: const CircleBorder(),
+//               child: InkWell(
+//                 customBorder: const CircleBorder(),
+//                 onTap: onBack,
+//                 child: const Padding(
+//                   padding: EdgeInsets.all(8),
+//                   child: Icon(Icons.chevron_left,
+//                       size: 20, color: AppColors.textSecondary),
+//                 ),
+//               ),
+//             ),
+//             const SizedBox(width: 12),
+//           ],
+//           Expanded(
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 Text(title,
+//                     style: const TextStyle(
+//                         fontSize: 22,
+//                         fontWeight: FontWeight.w700,
+//                         color: AppColors.textPrimary)),
+//                 const SizedBox(height: 2),
+//                 Text(subtitle,
+//                     style: const TextStyle(
+//                         fontSize: 12, color: AppColors.textSecondary)),
+//               ],
+//             ),
+//           ),
+//           ?trailing,
+//         ],
+//       ),
+//     );
+//   }
+// }
 
 /// 오른쪽 위 '● 온디바이스' 표시 (네트워크 없이 동작 중)
-class OnDeviceChip extends StatelessWidget {
-  const OnDeviceChip({super.key});
+// class OnDeviceChip extends StatelessWidget {
+//   const OnDeviceChip({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.primaryBg,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.memory, size: 12, color: AppColors.primary),
-          SizedBox(width: 4),
-          Text('온디바이스',
-              style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary)),
-        ],
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+//       decoration: BoxDecoration(
+//         color: AppColors.primaryBg,
+//         borderRadius: BorderRadius.circular(999),
+//       ),
+//       child: const Row(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           Icon(Icons.memory, size: 12, color: AppColors.primary),
+//           SizedBox(width: 4),
+//           Text('온디바이스',
+//               style: TextStyle(
+//                   fontSize: 10,
+//                   fontWeight: FontWeight.w600,
+//                   color: AppColors.primary)),
+//         ],
+//       ),
+//     );
+//   }
+// }
 
 // ───────────────────────── 배지 ─────────────────────────
 
@@ -120,16 +120,35 @@ class Pill extends StatelessWidget {
   final Color color;
   final Color background;
 
+  // 개별 배지에서 지정하지 않으면 적용되는 기본 스타일
+  final EdgeInsetsGeometry? padding;
+  final double? fontSize;
+  final double? borderRadius;
+
+  static const EdgeInsetsGeometry defaultPadding =
+      EdgeInsets.symmetric(horizontal: 12, vertical: 6);
+
+  static const double defaultFontSize = 12;
+  static const double defaultBorderRadius = 999;
+
   const Pill({
     super.key,
     required this.label,
     required this.color,
     required this.background,
+    this.padding,
+    this.fontSize,
+    this.borderRadius,
   });
 
   /// 정상 / 주의 N
-  factory Pill.status(InspectionStatus status, {String? label, int count = 0}) {
+  factory Pill.status(
+    InspectionStatus status, {
+    String? label,
+    int count = 0,
+  }) {
     final normal = status == InspectionStatus.normal;
+
     return Pill(
       label: label ?? (normal ? '정상' : '주의 $count'),
       color: normal ? AppColors.normal : AppColors.warning,
@@ -137,32 +156,101 @@ class Pill extends StatelessWidget {
     );
   }
 
+  /// 점검 결과 상태를 공통 배지로 변환
+  factory Pill.inspectionStatus(String rawStatus) {
+    final normalizedStatus = rawStatus.replaceAll(
+      RegExp(r'\s+'),
+      '',
+    );
+
+    switch (normalizedStatus) {
+      case '양호':
+      case '정상':
+        return Pill(
+          label: '정상',
+          color: AppColors.normal,
+          background: AppColors.normalBg,
+        );
+
+      case '주의관찰':
+      case '주의':
+        return Pill(
+          label: '주의',
+          color: AppColors.warning,
+          background: AppColors.warningBg,
+        );
+
+      case '수리요함':
+      case '수리필요':
+      case '수리':
+        return Pill(
+          label: '수리',
+          color: AppColors.danger,
+          background: AppColors.dangerBg,
+        );
+
+      default:
+        return Pill(
+          label: rawStatus,
+          color: AppColors.warning,
+          background: AppColors.warningBg,
+        );
+    }
+  }
+
+  /// 점검 주기 배지
+  factory Pill.cycle(String cycle) {
+    final isMonthly = cycle == '월간';
+
+    return Pill(
+      label: cycle,
+      color: isMonthly
+          ? const Color(0xff4c6ef5)
+          : const Color(0xffa55eea),
+      background: isMonthly
+          ? const Color(0xffe8f0fe)
+          : const Color(0xfff3e8ff),
+    );
+  }
+
   /// 이번 달 필수 개수 (지연 있으면 빨강)
   static Widget? due(List<DueItem> due) {
     if (due.isEmpty) return null;
-    final overdue = due.where((d) => d.level == DueLevel.overdue).length;
+
+    final overdue =
+        due.where((d) => d.level == DueLevel.overdue).length;
+
     return overdue > 0
         ? Pill(
             label: '지연 $overdue',
             color: AppColors.danger,
-            background: AppColors.dangerBg)
+            background: AppColors.dangerBg,
+          )
         : Pill(
             label: '이번 달 ${due.length}',
             color: AppColors.primary,
-            background: AppColors.primaryBg);
+            background: AppColors.primaryBg,
+          );
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: padding ?? defaultPadding,
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(
+          borderRadius ?? defaultBorderRadius,
+        ),
       ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: fontSize ?? defaultFontSize,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
     );
   }
 }
