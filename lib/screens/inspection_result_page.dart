@@ -148,9 +148,9 @@ class _InspectionResultPageState
   /// 수정 화면으로 이동하지 않고 바로 정상 카드로 변경
   void _recordNoIssue(int index) {
     setState(() {
-      results[index]['status'] = '양호';
-      results[index]['remarks'] = '음성 인식 없이 정상 기록';
-      results[index]['speech'] = null;
+      results[index]['status'] = '정상';
+      results[index]['remarks'] = '정상';
+      results[index]['speech'] = '\'음성 인식 없이 정상 기록\'';
     });
   }
 
@@ -231,36 +231,40 @@ class _InspectionResultPageState
         child: Column(
           children: [
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.all(16.0),
-                itemCount: results.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 16),
-                itemBuilder: (context, index) {
-                  final item = results[index];
+              child: ScrollConfiguration(
+                // 가장자리에서 콘텐츠가 늘어나는 효과 제거
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  overscroll: false,
+                ),
+                child: ListView.separated(
+                  // 스크롤 끝에서 튕기는 효과 방지
+                  physics: const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: results.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    final item = results[index];
 
-                  return InspectionCard(
-                    title: item['title'],
-                    statusText: item['status'],
-                    remarks: item['remarks'],
-                    speech: item['speech'],
-
-                    // 결과가 없으면 정상으로 바로 변경하고,
-                    // 기존 결과 카드라면 수정 화면 열기
-                    onEditPressed: () {
-                      if (item['status'] == null) {
-                        _recordNoIssue(index);
-                      } else {
-                        _editResult(index);
-                      }
-                    },
-
-                    // '직접 입력' 버튼
-                    onDirectCheckPressed: () {
-                      _directInput(index);
-                    },
-                  );
-                },
+                    // 기존 InspectionCard 코드를 그대로 유지
+                    return InspectionCard(
+                      title: item['title'],
+                      statusText: item['status'],
+                      remarks: item['remarks'],
+                      speech: item['speech'],
+                      onEditPressed: () {
+                        if (item['status'] == null) {
+                          _recordNoIssue(index);
+                        } else {
+                          _editResult(index);
+                        }
+                      },
+                      onDirectCheckPressed: () {
+                        _directInput(index);
+                      },
+                    );
+                  },
+                ),
               ),
             ),
 

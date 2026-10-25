@@ -110,13 +110,29 @@ Future<void> _startVoiceInspection() async {
 
     final completed = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(
-        builder: (context) => VoiceInspectionScreen(
-          equipmentId: equipmentId,
-          itemId: item.id,
-          itemName: item.title,
-          isLastItem: i == pendingItems.length - 1,
-        ),
+      PageRouteBuilder<bool>(
+        // 화면 전환 애니메이션 제거
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return VoiceInspectionScreen(
+            equipmentId: equipmentId,
+            itemId: item.id,
+            itemName: item.title,
+            isLastItem: i == pendingItems.length - 1,
+          );
+        },
+
+        // 좌우 이동이나 페이드 효과 없이 화면 표시
+        transitionsBuilder: (
+          context,
+          animation,
+          secondaryAnimation,
+          child,
+        ) {
+          return child;
+        },
       ),
     );
 
