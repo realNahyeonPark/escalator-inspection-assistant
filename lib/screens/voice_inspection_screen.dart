@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import '../widgets/common_app_header.dart';
 
@@ -6,14 +5,12 @@ class VoiceInspectionScreen extends StatefulWidget {
   final String equipmentId;
   final String itemId;
   final String itemName;
-  final bool isLastItem;
 
   const VoiceInspectionScreen({
     super.key,
     required this.equipmentId,
     required this.itemId,
     required this.itemName,
-    required this.isLastItem,
   });
 
   @override
@@ -30,7 +27,6 @@ class _VoiceInspectionScreenState extends State<VoiceInspectionScreen>
   void initState() {
     super.initState();
 
-    // 파동 애니메이션 컨트롤러
     _waveController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
@@ -43,7 +39,7 @@ class _VoiceInspectionScreenState extends State<VoiceInspectionScreen>
     super.dispose();
   }
 
-  // 버튼 클릭 시 음성 인식 상태 토글
+  // 음성 듣기 상태 토글
   void _toggleListening() {
     setState(() {
       isListening = !isListening;
@@ -56,17 +52,14 @@ class _VoiceInspectionScreenState extends State<VoiceInspectionScreen>
     });
   }
 
-  // 현재 점검 항목 완료 후 InspectionScreen으로 복귀
+  // 현재 음성 점검 화면 완료
   void _finishCurrentItem() {
     if (isListening) {
-      setState(() {
-        isListening = false;
-      });
-
+      isListening = false;
       _waveController.stop();
     }
 
-    // true를 반환하면 InspectionScreen에서 다음 항목으로 진행
+    // InspectionScreen으로 완료 결과 반환
     Navigator.pop(context, true);
   }
 
@@ -76,7 +69,7 @@ class _VoiceInspectionScreenState extends State<VoiceInspectionScreen>
       backgroundColor: const Color(0xfff5f5f5),
 
       appBar: CommonAppHeader(
-        title: '${widget.itemName} 점검',
+        title: '음성 점검',
         subtitle: '결과를 말씀해주세요',
       ),
 
@@ -199,7 +192,7 @@ class _VoiceInspectionScreenState extends State<VoiceInspectionScreen>
 
           const Spacer(),
 
-          // 현재 항목 완료 후 다음 항목 또는 결과 확인
+          // 음성 점검 완료 버튼
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.white,
@@ -214,9 +207,9 @@ class _VoiceInspectionScreenState extends State<VoiceInspectionScreen>
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: Text(
-                widget.isLastItem ? '점검 결과 확인' : '다음 항목',
-                style: const TextStyle(
+              child: const Text(
+                '점검 완료',
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),

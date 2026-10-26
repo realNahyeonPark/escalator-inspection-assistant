@@ -1,18 +1,23 @@
+
 import 'package:flutter/material.dart';
 
 import '../models/inspection_item.dart';
 import '../models/equipment.dart';
 import '../controllers/equipment_repository.dart';
 import '../widgets/common_app_header.dart';
+import '../widgets/equipment_summary_card.dart';
+import '../widgets/inspection_item_tile.dart';
 import '../widgets/common_widgets.dart';
 import 'voice_inspection_screen.dart';
 import 'inspection_result_page.dart';
+
 
 class InspectionScreen extends StatefulWidget {
   const InspectionScreen({super.key});
 
   @override
-  State<InspectionScreen> createState() => _InspectionScreenState();
+  State<InspectionScreen> createState() =>
+      _InspectionScreenState();
 }
 
 class _InspectionScreenState extends State<InspectionScreen> {
@@ -22,6 +27,7 @@ class _InspectionScreenState extends State<InspectionScreen> {
   Equipment? _equipment;
   bool _routeArgumentsRead = false;
 
+  // 점검 항목 목록
   final List<InspectionItem> inspectionItems = [
     InspectionItem(
       id: '1',
@@ -35,21 +41,21 @@ class _InspectionScreenState extends State<InspectionScreen> {
       title: '스텝·라이저',
       description: '점검 필요',
       cycle: '월간',
-      isChecked: false,
+      isChecked: true,
     ),
     InspectionItem(
       id: '3',
       title: '콤브',
       description: '점검 필요',
       cycle: '월간',
-      isChecked: false,
+      isChecked: true,
     ),
     InspectionItem(
       id: '4',
       title: '스텝체인',
       description: '점검 필요',
       cycle: '3개월',
-      isChecked: false,
+      isChecked: true,
     ),
     InspectionItem(
       id: '5',
@@ -67,64 +73,72 @@ class _InspectionScreenState extends State<InspectionScreen> {
     ),
   ];
 
-  /// 라우트에서 전달받은 설비 ID로 실제 설비 정보를 조회
-@override
-void didChangeDependencies() {
-  super.didChangeDependencies();
+  /// 라우트에서 전달받은 설비 ID로 설비 조회
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
 
-  if (_routeArgumentsRead) return;
-  _routeArgumentsRead = true;
+    if (_routeArgumentsRead) return;
+    _routeArgumentsRead = true;
 
-  final arguments = ModalRoute.of(context)?.settings.arguments;
+    final arguments = ModalRoute.of(context)?.settings.arguments;
 
-  if (arguments is String && arguments.isNotEmpty) {
-    _equipmentId = arguments;
-    _equipment = _repo.equipmentOf(arguments);
-  }
-}
-
-  /// 음성 점검 화면 열기
-  ///
-  /// 아직 완료하지 않은 항목 중 첫 번째 항목부터 점검
-
-Future<void> _startVoiceInspection() async {
-  final equipmentId = _equipmentId;
-
-  if (equipmentId == null || equipmentId.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('설비 정보를 확인할 수 없습니다.'),
-      ),
-    );
-    return;
+    if (arguments is String && arguments.isNotEmpty) {
+      _equipmentId = arguments;
+      _equipment = _repo.equipmentOf(arguments);
+    }
   }
 
-  // 체크되지 않은 항목만 점검 대상으로 구성
-  final pendingItems = inspectionItems
-      .where((item) => !item.isChecked)
-      .toList();
+  /// 음성 점검 화면을 한 번 열고 결과 페이지로 이동
+  Future<void> _startVoiceInspection() async {
+    final equipmentId = _equipmentId;
 
-  // 미완료 항목을 하나씩 순서대로 점검
-  for (var i = 0; i < pendingItems.length; i++) {
-    final item = pendingItems[i];
+    if (equipmentId == null || equipmentId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('설비 정보를 확인할 수 없습니다.'),
+        ),
+      );
+      return;
+    }
 
+    // 체크되지 않은 항목 중 첫 번째 항목 선택
+    final pendingItems = inspectionItems
+        .where((item) => !item.isChecked)
+        .toList();
+
+    // 점검할 항목이 없다면 결과 페이지로 바로 이동
+    if (pendingItems.isEmpty) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          settings: RouteSettings(
+            arguments: {
+              'equipmentId': equipmentId,
+              'inspectionItems': inspectionItems,
+            },
+          ),
+          builder: (context) => const InspectionResultPage(),
+        ),
+      );
+      return;
+    }
+
+    final item = pendingItems.first;
+
+    // 음성 점검 화면은 한 번만 표시
     final completed = await Navigator.push<bool>(
       context,
       PageRouteBuilder<bool>(
-        // 화면 전환 애니메이션 제거
         transitionDuration: Duration.zero,
         reverseTransitionDuration: Duration.zero,
-
         pageBuilder: (context, animation, secondaryAnimation) {
           return VoiceInspectionScreen(
             equipmentId: equipmentId,
             itemId: item.id,
             itemName: item.title,
-            isLastItem: i == pendingItems.length - 1,
           );
         },
-
-        // 좌우 이동이나 페이드 효과 없이 화면 표시
         transitionsBuilder: (
           context,
           animation,
@@ -136,31 +150,34 @@ Future<void> _startVoiceInspection() async {
       ),
     );
 
-    if (!mounted) return;
+    if (!mounted || completed != true) return;
 
-    // 점검 완료 버튼이 아니라 뒤로가기를 눌렀으면
-    // 전체 점검 흐름을 중단
-    if (completed != true) return;
-  }
-
-  if (!mounted) return;
-
-  // 모든 미완료 항목의 음성 점검 화면을 거친 뒤
-  // 결과 페이지를 한 번만 표시
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      settings: RouteSettings(
-        arguments: {
-          'equipmentId': equipmentId,
-          'inspectionItems': inspectionItems,
+    // 음성 점검 완료 후 결과 페이지로 이동
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder<void>(
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        settings: RouteSettings(
+          arguments: {
+            'equipmentId': equipmentId,
+            'inspectionItems': inspectionItems,
+          },
+        ),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return const InspectionResultPage();
+        },
+        transitionsBuilder: (
+          context,
+          animation,
+          secondaryAnimation,
+          child,
+        ) {
+          return child;
         },
       ),
-      builder: (context) => const InspectionResultPage(),
-    ),
-  );
-}
-
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +187,7 @@ Future<void> _startVoiceInspection() async {
 
     final equipment = _equipment;
 
-    // 실제 설비 위치 표시
+    // 실제 설비 위치
     final locationText = equipment == null
         ? (_equipmentId == null
             ? '설비 정보 없음'
@@ -179,7 +196,7 @@ Future<void> _startVoiceInspection() async {
             ? '위치 미입력'
             : equipment.location);
 
-    // 저장소에 기록된 마지막 점검 정보 조회
+    // 마지막 점검 정보
     final latest = _equipmentId == null
         ? null
         : _repo.latestOf(_equipmentId!);
@@ -191,7 +208,6 @@ Future<void> _startVoiceInspection() async {
     return Scaffold(
       backgroundColor: const Color(0xfff5f5f5),
 
-      // 기존 공통 헤더 유지
       appBar: const CommonAppHeader(
         title: '점검 항목',
         subtitle: '오늘 수행할 항목입니다',
@@ -199,69 +215,25 @@ Future<void> _startVoiceInspection() async {
 
       body: Column(
         children: [
-          // 설비 정보 카드: 고정된 3호기 정보 대신 실제 정보 표시
+          // 분리한 설비 요약 카드
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xff4c6ef5),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    equipment?.name ??
-                        (_equipmentId == null
-                            ? '설비 정보 없음'
-                            : '설비 ID: $_equipmentId'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$locationText · $lastInspectionText',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  LinearProgressIndicator(
-                    value: totalCount > 0
-                        ? completedCount / totalCount
-                        : 0,
-                    backgroundColor:
-                        Colors.white.withValues(alpha: 0.2),
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(
-                      Colors.white,
-                    ),
-                    minHeight: 8,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '$totalCount개 중 $completedCount개 완료',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+            child: EquipmentSummaryCard(
+              equipmentName: equipment?.name ??
+                  (_equipmentId == null
+                      ? '설비 정보 없음'
+                      : '설비 ID: $_equipmentId'),
+              locationText: locationText,
+              lastInspectionText: lastInspectionText,
+              completedCount: completedCount,
+              totalCount: totalCount,
             ),
           ),
 
           const SizedBox(height: 24),
 
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            padding: EdgeInsets.symmetric(horizontal: 16),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -276,80 +248,35 @@ Future<void> _startVoiceInspection() async {
 
           const SizedBox(height: 12),
 
-          // 점검 항목 리스트
+          // 점검 항목 목록
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: inspectionItems.length,
-              separatorBuilder: (context, index) =>
-                  const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final item = inspectionItems[index];
+            child: ScrollConfiguration(
+              // 스크롤 끝에서 콘텐츠가 늘어나는 효과 제거
+              behavior: ScrollConfiguration.of(context).copyWith(
+                overscroll: false,
+              ),
+              child: ListView.separated(
+                // 경계에서 늘어나거나 튕기는 효과 방지
+                physics: const ClampingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: inspectionItems.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final item = inspectionItems[index];
 
-                final statusText =
-                    item.isChecked ? '이상 없음' : '점검 필요';
-                final statusColor = item.isChecked
-                    ? Colors.grey[600]!
-                    : const Color(0xffe74c3c);
+                  return InspectionItemTile(
+                    item: item,
+                    onChanged: (value) {
+                      setState(() {
+                        item.isChecked = value ?? false;
+                      });
 
-                return Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.grey[200]!,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Checkbox(
-                        value: item.isChecked,
-                        onChanged: (val) {
-                          setState(() {
-                            item.isChecked = val ?? false;
-                          });
-
-                          // TODO: 백엔드 상태 업데이트 연동
-                        },
-                        activeColor: const Color(0xff1aa179),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.title,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              statusText,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: statusColor,
-                                fontWeight: item.isChecked
-                                    ? FontWeight.normal
-                                    : FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // 공통 Pill 위젯으로 점검 주기 표시
-                      Pill.cycle(item.cycle),
-                    ],
-                  ),
-                );
-              },
+                      // TODO: 백엔드 상태 업데이트 연동
+                    },
+                  );
+                },
+              ),
             ),
           ),
 

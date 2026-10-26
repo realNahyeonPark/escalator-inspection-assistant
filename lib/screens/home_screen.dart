@@ -39,9 +39,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       e.location.contains(_query))
                   .toList();
 
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                children: [
+              return ScrollConfiguration(
+                // 스크롤 끝에서 콘텐츠가 늘어나는 효과 제거
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  overscroll: false,
+                ),
+                child: ListView(
+                  physics: const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  children: [
                   SearchField(
                     hint: '에스컬레이터 검색',
                     onChanged: (v) => setState(() => _query = v.trim()),
@@ -71,6 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 10),
                   ],
                 ],
+                ),
               );
             },
           ),
@@ -152,10 +159,17 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
               child: RefreshIndicator(
                 // 아래로 당기면 서버에서 다시 받기
                 onRefresh: () => _repo.syncHistory(e.id),
-                child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                children: [
+                child: ScrollConfiguration(
+                  // 당겨서 새로고침 기능은 유지하고 늘어나는 시각 효과만 제거
+                  behavior: ScrollConfiguration.of(context).copyWith(
+                    overscroll: false,
+                  ),
+                  child: ListView(
+                    physics: const ClampingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                    children: [
                   EquipmentSpecCard(spec: e.spec),
                   const SizedBox(height: 12),
                   // 누락 방지: 이번 달 필수 항목
@@ -225,8 +239,9 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                       record: records[i],
                       isLast: i == records.length - 1,
                     ),
-                ],
-              ),
+                    ],
+                  ),
+                ),
               ),
             ),
             Padding(

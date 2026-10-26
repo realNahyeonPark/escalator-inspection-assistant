@@ -19,8 +19,6 @@ class MyApp extends StatelessWidget {
         primaryColor: const Color(0xff4c6ef5),
         useMaterial3: true,
       ),
-      // [변경] 시작 화면: 설비 스캔 → 스캔 성공 시 '/inspect' 로 이동
-      // (기존: home: const InspectionScreen())
       initialRoute: '/',
       routes: {
         '/': (_) => const MainShell(),

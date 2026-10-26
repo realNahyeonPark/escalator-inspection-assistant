@@ -154,80 +154,80 @@ class _ScanScreenState extends State<ScanScreen> {
       ),
       body: Column(
         children: [
-          // 기존 PageHeader에 있던 설비 상태 표시
-          // Padding(
-          //   padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-          //   child: const Align(
-          //     alignment: Alignment.centerRight,
-          //     child: OnDeviceChip(),
-          //   ),
-          //),
           Expanded(
             child: ListenableBuilder(
               listenable: _repo,
               builder: (context, _) {
                 final recent = _repo.recentEquipments();
 
-                return ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                  children: [
-                    Center(
-                      child: _ModeToggle(
-                        mode: _mode,
-                        onChanged: (m) => setState(() => _mode = m),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Center(
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          _ScannerBox(
-                            mode: _mode,
-                            onTap: _simulateScan,
-                          ),
-                          if (_looking)
-                            const CircularProgressIndicator(
-                              color: Colors.white,
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Center(
-                      child: Text(
-                        '박스를 탭하면 테스트용 QR을 고를 수 있어요',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
+                return ScrollConfiguration(
+                  // 스크롤 끝에서 콘텐츠가 늘어나는 효과 제거
+                  behavior: ScrollConfiguration.of(context).copyWith(
+                    overscroll: false,
+                  ),
+                  child: ListView(
+                    // 스크롤 끝에서 늘어나거나 튕기는 효과 방지
+                    physics: const ClampingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                    children: [
+                      Center(
+                        child: _ModeToggle(
+                          mode: _mode,
+                          onChanged: (m) => setState(() => _mode = m),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    const SectionLabel('최근 점검'),
-                    for (final e in recent) ...[
-                      Builder(
-                        builder: (_) {
-                          final latest = _repo.latestOf(e.id);
-
-                          return EquipmentTile(
-                            equipment: e,
-                            subtitle: latest == null
-                                ? '${e.location} · 기록 없음'
-                                : '${e.location} · ${relativeDay(latest.date)}',
-                            trailing: latest == null
-                                ? null
-                                : Pill.status(
-                                    latest.status,
-                                    count: latest.cautionItems.length,
-                                  ),
-                            onTap: () => _handleQr(e.id),
-                          );
-                        },
+                      const SizedBox(height: 20),
+                      Center(
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            _ScannerBox(
+                              mode: _mode,
+                              onTap: _simulateScan,
+                            ),
+                            if (_looking)
+                              const CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
+                      const Center(
+                        child: Text(
+                          '박스를 탭하면 테스트용 QR을 고를 수 있어요',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      const SectionLabel('최근 점검'),
+                      for (final e in recent) ...[
+                        Builder(
+                          builder: (_) {
+                            final latest = _repo.latestOf(e.id);
+
+                            return EquipmentTile(
+                              equipment: e,
+                              subtitle: latest == null
+                                  ? '${e.location} · 기록 없음'
+                                  : '${e.location} · ${relativeDay(latest.date)}',
+                              trailing: latest == null
+                                  ? null
+                                  : Pill.status(
+                                      latest.status,
+                                      count: latest.cautionItems.length,
+                                    ),
+                              onTap: () => _handleQr(e.id),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                      ],
                     ],
-                  ],
+                  ),
                 );
               },
             ),
